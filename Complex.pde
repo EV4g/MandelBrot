@@ -1,8 +1,8 @@
 
-//the part coding for the A + Bi
+//complex number support
 class Complex {
   double a; //real 
-  double b;  // not real
+  double b; //imag
   
   Complex(double a, double b){
     this.a = a;
@@ -17,14 +17,14 @@ class Complex {
   
   void AbsSquare(){
     double temp = a * a - b * b;
-    if (a < 0){a *= -1;}
-    if (b < 0){b *= -1;}
+    a = (a > 0 ? a : -a);
+    b = (b > 0 ? b : -b);
     b = 2.0 * a * b;
     a = temp;    
   }
   
   double Magnitude(){
-    return a*a + b*b;
+    return a * a + b * b;
   }
   
   void Add(Complex c){
