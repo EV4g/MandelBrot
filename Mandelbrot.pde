@@ -1,4 +1,5 @@
 
+//Calculate mandelbrot set
 int[] mandelGrid(int Mit, int[] g, boolean sym) {
   int ymax = (sym ? height / 2 + 2 : height);   
   double minX = centerX - zoomHorizon/2, minY = centerY - zoomVert/2;
@@ -50,6 +51,7 @@ boolean skip(double a, double b) {
   return s;
 }
 
+//Edge detection, returns array with only the edge left
 int[] genBorder(int[] g) {
   int[] temp = new int[height * width];
   for  (int x = 0; x < width; x++) {
@@ -69,6 +71,7 @@ int[] genBorder(int[] g) {
   return temp;
 }
 
+//Random Point Integration, calculate trajectories for set number of random values
 int[] rPI(int Mit, int amount, int[] selection, boolean sym) { //random point iteration
   int[] temp = new int[height * width];
   double minX = centerX - zoomHorizon/2, minY = centerY - zoomVert/2;
