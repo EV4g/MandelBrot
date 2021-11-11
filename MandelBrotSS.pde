@@ -9,30 +9,31 @@ int[] Bg;
 
 void setup() {
   int start = millis();
-  size(1000, 1000);
-  
+  size(2000, 2000);
+  background(0);
+  zoomHorizon = 3.0;
+  zoomVert = 3.0 / ((double)width / (double)height);
+    
+  //for low-ram mode, disable Rg, Gg and Bg
   grid = new int [height * width];
   Rg = new int[height * width];
   Gg = new int[height * width];
   Bg = new int[height * width];
-   
-  zoomHorizon = 3.0;
-  zoomVert = 3.0 / ((double)width / (double)height);
-  
+     
   grid = mandelGrid(5000, grid, true);  
-  
+
   int mset = millis()-start;
   println("Checked points: "+mset+"ms");
-  
+    
   //enable for normal mode
-  Rg = rPI(5000, 1*(int)pow(10, 7), grid, false);
-  Gg = rPI(500, 1*(int)pow(10, 7), grid, false);
-  Bg = rPI(50, 5*(int)pow(10, 7), grid, false);
+  Rg = rPI(5000, p(1, 7), grid, false);
+  Gg = rPI(500, p(1, 7), grid, false);
+  Bg = rPI(50, p(5, 7), grid, false);
   
   //enable for low-ram mode
-  //falseColor(rPI(5000, 1*(int)pow(10, 7), grid), "R");
-  //falseColor(rPI(500, 1*(int)pow(10, 7), grid), "G");
-  //falseColor(rPI(50, 5*(int)pow(10, 7), grid), "B");
+  //falseColor(rPI(5000, p(1, 6), grid, false), "R");
+  //falseColor(rPI(500, p(1, 7), grid, false), "G");
+  //falseColor(rPI(50, p(5, 6), grid, false), "B");
    
   //reColour(grid); //display mandelbrot set for debug
   
@@ -60,6 +61,10 @@ void keyPressed(){
   }
 }
 
-void draw() { 
+void draw() {  
   noLoop();
+}
+
+int p(int mul, int pow){
+  return mul * (int)pow(10, pow);
 }
