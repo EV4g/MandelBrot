@@ -23,33 +23,26 @@ void falseColor(int[] r, int[] g, int[] b) {
 
 //Fills pixel[] based on 1 colour array and previous entries to pixel[]
 void falseColor(int[] map, String Type) {
-  float lm = 255 / log(amax(map)); 
+  float lm = 255 / log(amax(map));
+  loadPixels();
   switch(Type) {
-  case "R":
-    loadPixels();
+  case "R":    
     for (int i = 0; i < width * height; i++) {    
-      color c = pixels[i];
-      pixels[i] = color(lm * log(map[i]), c >> 8 & 0xFF, c & 0xFF);
+      pixels[i] += ((int)(lm * log(map[i]))) << 16;
     }
-    updatePixels();
     break;
   case "G":
-    loadPixels();
     for (int i = 0; i < width * height; i++) {   
-      color c = pixels[i];
-      pixels[i] = color(c >> 16 & 0xFF, lm * log(map[i]), c & 0xFF);
+      pixels[i] += ((int)(lm * log(map[i]))) << 8;
     }
-    updatePixels();
     break;
   case "B":
-    loadPixels();
     for (int i = 0; i < width * height; i++) {   
-      color c = pixels[i];
-      pixels[i] = color(c >> 16 & 0xFF, c >> 8 & 0xFF, lm * log(map[i]));
-    }
-    updatePixels();
+      pixels[i] += (int)(lm * log(map[i]));
+    }    
     break;
   }
+  updatePixels();
 }
 
 //max value of array
