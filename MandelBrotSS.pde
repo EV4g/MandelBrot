@@ -2,7 +2,7 @@ double zoomHorizon;
 double zoomVert;
 double centerX = 0, centerY = 0;
 boolean save = false;
-int[] grid;
+boolean[] mandelbrot;
 int[] Rg;
 int[] Gg;
 int[] Bg;
@@ -13,11 +13,11 @@ void setup() {
   start = millis();
   size(1000, 1000);
   background(0);
-  zoomHorizon = 3.0;
+  zoomHorizon = 3.0; //zoomlevel
   zoomVert = 3.0 / ((double)width / (double)height);
 
-  grid = new int [height * width];     
-  grid = mandelGrid(5000, grid, true);  
+  mandelbrot = new boolean [height * width];
+  mandelGrid(5000, true);  
   //reColour(grid); //display mandelbrot set for debug  
   mset = millis()-start; 
   println("Checked points: "+mset+"ms");
@@ -42,9 +42,9 @@ void startNMode() {
   Rg = new int[height * width];
   Gg = new int[height * width];
   Bg = new int[height * width];
-  Rg = rPI(5000, p(1, 6), grid, false);
-  Gg = rPI(500, p(1, 6), grid, false);
-  Bg = rPI(50, p(1, 6), grid, false);
+  Rg = rPI(5000, p(1, 8), false);
+  Gg = rPI(500, p(1, 8), false);
+  Bg = rPI(50, p(1, 8), false);
 
   int Calc = millis() - start - mset; 
   println("Calculated trajectories: "+Calc+"ms");
@@ -62,9 +62,9 @@ void startNMode() {
 
 //starts lower-ram usage mode
 void startLRMode() {
-  falseColor(rPI(5000, p(1, 6), grid, false), "R");
-  falseColor(rPI(500, p(1, 6), grid, false), "G");
-  falseColor(rPI(50, p(1, 6), grid, false), "B");
+  falseColor(rPI(5000, p(1.2, 9), false), "R");
+  falseColor(rPI(500, p(1.2, 9), false), "G");
+  falseColor(rPI(50, p(1.2, 9), false), "B");
   
   int PAF = millis() - start - mset;
   println("Filled pixels: "+PAF+"ms");
@@ -76,6 +76,6 @@ void startLRMode() {
   println("Total: "+(millis() - start)+"ms");
 }
 
-int p(int mul, int pow) {
-  return mul * (int)pow(10, pow);
+int p(float mul, int pow) {
+  return (int)(mul * (int)pow(10, pow));
 }
