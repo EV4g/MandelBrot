@@ -1,7 +1,7 @@
 
 //Calculate mandelbrot set
-int[] mandelGrid(int Mit, int[] g, boolean sym) {
-  int ymax = (sym ? height / 2 + 2 : height);   
+void mandelGrid(int Mit, boolean sym) {
+  int ymax = (sym ? height / 2 + 3 : height);   
   double minX = centerX - zoomHorizon/2, minY = centerY - zoomVert/2;
   for (int x = -width/6; x < 5.0*width/6.0; x++) {
     for (int y = 0; y < ymax; y++) {
@@ -23,9 +23,9 @@ int[] mandelGrid(int Mit, int[] g, boolean sym) {
           if (z.Magnitude() >= 4.0)           
             break;
         }
-        g[y + height * (x + width/6)] = (it < Mit ? 1 : 0);
+        mandelbrot[y + height * (x + width/6)] = (it < Mit ? false : true);
       } else {
-        g[y + height * (x + width/6)] = 0;
+        mandelbrot[y + height * (x + width/6)] = true;
       }
     }
   }
@@ -33,11 +33,10 @@ int[] mandelGrid(int Mit, int[] g, boolean sym) {
   if (sym) {
     for (int x = 0; x < width; x++) {
       for (int y = 0; y < height/2; y++) {
-        g[y + height/2 + x * height] = g[height/2 - y + x * height];
+        mandelbrot[y + height/2 + x * height] = mandelbrot[height/2 - y + x * height];
       }
     }
   }
-  return g;
 }
 
 //skip main circle and cardiod in mandelbrot set
@@ -45,7 +44,7 @@ boolean skip(double a, double b) {
   boolean s = false;
   float c = 1.0/4.0;
   a -= 1.0/4.0;
-  if (((a + 1.25) * (a + 1.25) + b * b) < 0.0625 || (a*a + b*b) * (a*a + b*b) + 4*c*a*(a*a + b*b) - 4*c*c*b*b < 0) {
+  if (((a + 1.25) * (a + 1.25) + b * b) < 0.0625 || (a*a + b*b) * (a*a + b*b) + 4*c*a*(a*a + b*b) - 4*c*c*b*b < 0 || ((a + 1.558) * (a + 1.558) + b * b) < 0.003 || (a+0.375) * (a+0.375) + (b+0.745) * (b+0.745) < 0.008) {
     s = true;
   }
   return s;
@@ -72,7 +71,7 @@ int[] genBorder(int[] g) {
 }
 
 //Random Point Integration, calculate trajectories for set number of random values
-int[] rPI(int Mit, int amount, int[] selection, boolean sym) { //random point iteration
+int[] rPI(int Mit, int amount, boolean sym) { //random point iteration
   int[] temp = new int[height * width];
   double minX = centerX - zoomHorizon/2, minY = centerY - zoomVert/2;
   int index = 0;
@@ -85,7 +84,7 @@ int[] rPI(int Mit, int amount, int[] selection, boolean sym) { //random point it
     int x = (int)((a - minX) / zoomHorizon * width) + width/6;
     int y = (int)((b - minY) / zoomVert * height);
     if (x > 0 && x < width && y > 0 && y < height) {
-      if (selection[y + x * height] != 0) { // == 0 for border, != 0 for all outside of set
+      if (!mandelbrot[y + x * height]) { //if not in mandelbrotset
         index++;
         Complex c = new Complex(a, b);
         Complex z = new Complex(0, 0);
