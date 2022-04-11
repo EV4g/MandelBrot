@@ -3,58 +3,60 @@ double zoomVert;
 double centerX = 0, centerY = 0;
 boolean save = false;
 boolean[] mandelbrot;
+int[] storageGrid;
 int[] Rg;
 int[] Gg;
 int[] Bg;
 int start; 
 int mset;
+int xdim;
+int ydim;
 
 void setup() {
+  xdim = 1000;
+  ydim = 1000;
+  noLoop();
   start = millis();
   size(1000, 1000);
   background(0);
   zoomHorizon = 3.0; //zoomlevel
-  zoomVert = 3.0 / ((double)width / (double)height);
+  zoomVert = 3.0 / ((double)xdim / (double)ydim);
 
-  mandelbrot = new boolean [height * width];
-  mandelGrid(5000, true);  
-  //reColour(grid); //display mandelbrot set for debug  
+  mandelbrot = new boolean [ydim * xdim];
+  mandelGrid(5000); //calculate in/out for all points 
+  //reColour(); //display mandelbrot set for debug  
   mset = millis()-start; 
   println("Checked points: "+mset+"ms");
   
-  //startNMode(); //normal mode
-  startLRMode(); //lower-ram usage mode
+  startNMode(); //normal mode
+  //startLRMode(); //lower-ram usage mode
 }
 
 void keyPressed() {
   if (key == 's') {
-    save(str(width)+"x"+str(height)+"x"+str(round(millis()))+".png");
+    save(str(xdim)+"x"+str(ydim)+"x"+str(round(millis()))+".png");
     println("saved");
   }
 }
 
-void draw() {  
-  noLoop();
-}
-
 //starts normal mode
 void startNMode() {
-  Rg = new int[height * width];
-  Gg = new int[height * width];
-  Bg = new int[height * width];
-  Rg = rPI(5000, p(1, 8), false);
-  Gg = rPI(500, p(1, 8), false);
-  Bg = rPI(50, p(1, 8), false);
+  Rg = new int[ydim * xdim];
+  Gg = new int[ydim * xdim];
+  Bg = new int[ydim * xdim];
+  Rg = rPIn(5000, p(1, 7), false);
+  Gg = rPIn(500, p(1, 7), false);
+  Bg = rPIn(50, p(1, 7), false);
 
   int Calc = millis() - start - mset; 
   println("Calculated trajectories: "+Calc+"ms");
 
-  falseColor(Rg, Gg, Bg); //only for normal mode
+  falseColor(Rg, Gg, Bg);
 
   int Color = millis() - start - (Calc + mset);
   println("Calculated colour: "+Color+"ms");
   if (save) {
-    save(str(width)+"x"+str(height)+"x"+str(round(millis()))+".png"); //autosave the image
+    save(str(xdim)+"x"+str(ydim)+"x"+str(round(millis()))+".tif"); //autosave the image
     println("Saved: "+(millis() - (Calc + mset + Color) - start)+"ms");
   }
   println("Total: "+(millis() - start)+"ms");
@@ -62,15 +64,19 @@ void startNMode() {
 
 //starts lower-ram usage mode
 void startLRMode() {
-  falseColor(rPI(5000, p(1.2, 9), false), "R");
-  falseColor(rPI(500, p(1.2, 9), false), "G");
-  falseColor(rPI(50, p(1.2, 9), false), "B");
+  storageGrid = new int[ydim * xdim];
+  rPI(5000, p(1, 8), false);   //fill grid for R  
+  falseColor("R");             //update pixels[] with grid
+  rPI(500, p(1, 8), false);
+  falseColor("G");
+  rPI(50, p(5, 8), false);
+  falseColor("B");
   
   int PAF = millis() - start - mset;
   println("Filled pixels: "+PAF+"ms");
   
   if (save) {
-    save(str(width)+"x"+str(height)+"x"+str(round(millis()))+".png"); //autosave the image
+    save("testmap/"+str(xdim)+"x"+str(ydim)+"x"+str(round(millis()))+".tif"); //autosave the image
     println("Saved: "+(millis() - PAF - mset - start)+"ms");
   }
   println("Total: "+(millis() - start)+"ms");
