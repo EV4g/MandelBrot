@@ -2,6 +2,8 @@ double zoomHorizon;
 double zoomVert;
 double centerX = 0, centerY = 0;
 boolean save = false;
+boolean lowram = true;
+PImage img;
 boolean[] mandelbrot;
 int[] storageGrid;
 int[] Rg;
@@ -17,24 +19,31 @@ void setup() {
   ydim = 1000;
   noLoop();
   start = millis();
-  size(1000, 1000);
-  background(0);
-  zoomHorizon = 3.0; //zoomlevel
+  zoomHorizon = 3.0;
   zoomVert = 3.0 / ((double)xdim / (double)ydim);
-
   mandelbrot = new boolean [ydim * xdim];
-  mandelGrid(5000); //calculate in/out for all points 
-  //reColour(); //display mandelbrot set for debug  
+  mandelGrid(5000); //calculate in/out for all points  
   mset = millis()-start; 
   println("Checked points: "+mset+"ms");
   
-  startNMode(); //normal mode
-  //startLRMode(); //lower-ram usage mode
+  if(!lowram){
+    size(1000, 1000);
+    background(0);
+    startNMode(); //normal mode
+  } else {
+    img = new PImage(xdim, ydim);
+    startLRMode(); //lower-ram usage mode
+  }
+  println("Total: "+(millis() - start)+"ms");
 }
 
 void keyPressed() {
   if (key == 's') {
-    save(str(xdim)+"x"+str(ydim)+"x"+str(round(millis()))+".png");
+    if(!lowram){
+      save(str(xdim)+"x"+str(ydim)+"x"+str(round(millis()))+".tif");
+    } else {
+      img.save(str(xdim)+"x"+str(ydim)+"x"+str(round(millis()))+".tif");
+    }
     println("saved");
   }
 }
@@ -56,10 +65,9 @@ void startNMode() {
   int Color = millis() - start - (Calc + mset);
   println("Calculated colour: "+Color+"ms");
   if (save) {
-    save(str(xdim)+"x"+str(ydim)+"x"+str(round(millis()))+".tif"); //autosave the image
-    println("Saved: "+(millis() - (Calc + mset + Color) - start)+"ms");
+    save(str(xdim)+"x"+str(ydim)+"x"+str(round(millis()))+".tif");
+    println("Saved: "+(millis() - (Calc + mset + Color + start))+"ms");
   }
-  println("Total: "+(millis() - start)+"ms");
 }
 
 //starts lower-ram usage mode
@@ -77,9 +85,8 @@ void startLRMode() {
   
   if (save) {
     save("testmap/"+str(xdim)+"x"+str(ydim)+"x"+str(round(millis()))+".tif"); //autosave the image
-    println("Saved: "+(millis() - PAF - mset - start)+"ms");
+    println("Saved: "+(millis() - (PAF + mset + start))+"ms");
   }
-  println("Total: "+(millis() - start)+"ms");
 }
 
 int p(float mul, int pow) {
