@@ -32,9 +32,14 @@ class Complex {
     b+= c.b;
   }
   
+  void DivBy(Complex u){
+    double temp = (a * u.a + b * u.b) / (u.a * u.a + u.b * u.b);
+    b = (b * u.a - a * u.b) / (u.a * u.a + u.b * u.b);
+    a = temp; 
+  }
+  
   void Div(float c){
     a /= c;
     b /= c;
-  }
-  
+  }  
 }
