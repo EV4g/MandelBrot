@@ -23,26 +23,26 @@ void falseColor(int[] r, int[] g, int[] b) {
 
 //Fills pixel[] based on 1 colour array and previous entries to pixel[]
 void falseColor(String Type) {
-  float lm = 255 / log(amax(storageGrid));
-  loadPixels();
+  float lm = 255 / log(imamax());
+  img.loadPixels();
   switch(Type) {
   case "R":    
     for (int i = 0; i < xdim * ydim; i++) {    
-      pixels[i] += ((int)(lm * log(storageGrid[i]))) << 16;
+      img.pixels[i] += ((int)(lm * log(storageGrid[i]))) << 16;
     }
     break;
   case "G":
     for (int i = 0; i < xdim * ydim; i++) {   
-      pixels[i] += ((int)(lm * log(storageGrid[i]))) << 8;
+      img.pixels[i] += ((int)(lm * log(storageGrid[i]))) << 8;
     }
     break;
   case "B":
     for (int i = 0; i < xdim * ydim; i++) {   
-      pixels[i] += (int)(lm * log(storageGrid[i]));
+      img.pixels[i] += (int)(lm * log(storageGrid[i]));
     }    
     break;
   }
-  updatePixels();
+  img.updatePixels();
 }
 
 //max value of array
@@ -50,6 +50,15 @@ int amax(int[] g) {
   int m = 0;
   for (int i = 0; i < xdim * ydim; i++) {
     int a = g[i];
+    m = a - ((a-m)&((a-m)>>31));
+  }
+  return m;
+}
+
+int imamax() {
+  int m = 0;
+  for (int i = 0; i < xdim * ydim; i++) {
+    int a = storageGrid[i];
     m = a - ((a-m)&((a-m)>>31));
   }
   return m;
