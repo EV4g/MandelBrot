@@ -1,11 +1,11 @@
 
 //black-grey-white colouring for debugging
 void reColour() {
-  loadPixels();
+  img.loadPixels();
   for (int i = 0; i < ydim * xdim; i++) {
-    pixels[i] = color(mandelbrot[i] ? 255 : 0);
+    img.pixels[i] = color(mandelbrot[i] ? 255 : 0);
   }
-  updatePixels();
+  img.updatePixels();
 }
 
 //Fills pixel[] based on 3 arrays, each for either r,g or b
@@ -14,33 +14,19 @@ void falseColor(int[] r, int[] g, int[] b) {
   float lrm = 255 / log(amax(r)); 
   float lgm = 255 / log(amax(g));
   float lbm = 255 / log(amax(b)); 
-  loadPixels();
+  img.loadPixels();
   for (int i = 0; i < xdim * ydim; i++) {
-    pixels[i] = (((int)(log(r[i]) * lrm)) << 16) + (((int)(log(g[i]) * lgm)) << 8) + ((int)(log(b[i]) * lbm)) - cube;
+    img.pixels[i] = (((int)(log(r[i]) * lrm)) << 16) + (((int)(log(g[i]) * lgm)) << 8) + ((int)(log(b[i]) * lbm)) - cube;
   }
-  updatePixels();
+  img.updatePixels();
 }
 
 //Fills pixel[] based on 1 colour array and previous entries to pixel[]
-void falseColor(String Type) {
+void falseColor(int offset) {
   float lm = 255 / log(imamax());
   img.loadPixels();
-  switch(Type) {
-  case "R":    
-    for (int i = 0; i < xdim * ydim; i++) {    
-      img.pixels[i] += ((int)(lm * log(storageGrid[i]))) << 16;
-    }
-    break;
-  case "G":
-    for (int i = 0; i < xdim * ydim; i++) {   
-      img.pixels[i] += ((int)(lm * log(storageGrid[i]))) << 8;
-    }
-    break;
-  case "B":
-    for (int i = 0; i < xdim * ydim; i++) {   
-      img.pixels[i] += (int)(lm * log(storageGrid[i]));
-    }    
-    break;
+  for (int i = 0; i < xdim * ydim; i++) {    
+    img.pixels[i] += ((int)(lm * log(storageGrid[i]))) << offset;
   }
   img.updatePixels();
 }
@@ -55,6 +41,7 @@ int amax(int[] g) {
   return m;
 }
 
+//max value of storageGrid
 int imamax() {
   int m = 0;
   for (int i = 0; i < xdim * ydim; i++) {
@@ -62,4 +49,10 @@ int imamax() {
     m = a - ((a-m)&((a-m)>>31));
   }
   return m;
+}
+
+void init() {
+  for (int i = 0; i < xdim * ydim; i++) {
+    img.pixels[i]  = -1 << 24;
+  }
 }
