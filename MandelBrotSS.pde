@@ -15,13 +15,12 @@ int start;
 int mset;
 int xdim;
 int ydim;
-
 int Rn;
 int Gn;
 int Bn;
 
 void settings() {
-  save = false;
+  save = true;     //save output to .tif file
   lowram = true;    //use lower ram-usage mode
   output = true;    //output result to canvas
   mLookUp = true;   //mandelbrot-lookup-array or on-the-fly setcalculation //not yet implemented
@@ -53,11 +52,11 @@ void setup() {
     init();        //initialize PImage by setting values to -1<<24
     startLRMode(); //lower-ram usage mode
   }
-  
+
   if (output) {
     image(img, 0, 0);
   }
-  
+
   println("Total: "+(millis() - start)+"ms");
   println("Done");
 }
@@ -86,7 +85,7 @@ void startNMode() {
   int Color = millis() - start - (Calc + mset);
   println("Calculated colour: "+Color+"ms");
   if (save) {
-    save(str(xdim)+"x"+str(ydim)+"x"+str(round(millis()))+".tif");
+    img.save(str(xdim)+"x"+str(ydim)+"x"+str(round(millis()))+".tif");
     println("Saved: "+(millis() - (Calc + mset + Color + start))+"ms");
   }
 }
@@ -105,7 +104,7 @@ void startLRMode() {
   println("Filled pixels: "+PAF+"ms");
 
   if (save) {
-    save("testmap/"+str(xdim)+"x"+str(ydim)+"x"+str(round(millis()))+".tif"); //autosave the image
+    img.save("testmap/"+str(xdim)+"x"+str(ydim)+"x"+str(round(millis()))+".tif"); //autosave the image
     println("Saved: "+(millis() - (PAF + mset + start))+"ms");
   }
 }
