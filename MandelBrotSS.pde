@@ -18,9 +18,10 @@ int ydim;
 int Rn;
 int Gn;
 int Bn;
+String path;
 
 void settings() {
-  save = true;     //save output to .tif file
+  save = true;      //save output to .tif file
   lowram = true;    //use lower ram-usage mode
   output = true;    //output result to canvas
   mLookUp = true;   //mandelbrot-lookup-array or on-the-fly setcalculation //not yet implemented
@@ -35,6 +36,7 @@ void settings() {
 }
 
 void setup() {  
+  path = sketchPath();
   noLoop();
   start = millis();
   zoomHorizon = 3.0;
@@ -63,7 +65,7 @@ void setup() {
 
 void keyPressed() {
   if (key == 's') {
-    img.save(str(xdim)+"x"+str(ydim)+"x"+str(round(millis()))+".tif");
+    img.save(path+"/"+str(xdim)+"x"+str(ydim)+"x"+str(round(millis()))+".tif");
     println("saved");
   }
 }
@@ -85,7 +87,7 @@ void startNMode() {
   int Color = millis() - start - (Calc + mset);
   println("Calculated colour: "+Color+"ms");
   if (save) {
-    img.save(str(xdim)+"x"+str(ydim)+"x"+str(round(millis()))+".tif");
+    img.save(path+"/"+str(xdim)+"x"+str(ydim)+"x"+str(round(millis()))+".tif");
     println("Saved: "+(millis() - (Calc + mset + Color + start))+"ms");
   }
 }
@@ -104,7 +106,7 @@ void startLRMode() {
   println("Filled pixels: "+PAF+"ms");
 
   if (save) {
-    img.save("testmap/"+str(xdim)+"x"+str(ydim)+"x"+str(round(millis()))+".tif"); //autosave the image
+    img.save(path+"/"+str(xdim)+"x"+str(ydim)+"x"+str(round(millis()))+".tif"); //autosave the image
     println("Saved: "+(millis() - (PAF + mset + start))+"ms");
   }
 }
