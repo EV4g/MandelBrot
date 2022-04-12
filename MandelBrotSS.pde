@@ -53,6 +53,11 @@ void setup() {
     init();        //initialize PImage by setting values to -1<<24
     startLRMode(); //lower-ram usage mode
   }
+  
+  if (output) {
+    image(img, 0, 0);
+  }
+  
   println("Total: "+(millis() - start)+"ms");
   println("Done");
 }
@@ -102,10 +107,6 @@ void startLRMode() {
   if (save) {
     save("testmap/"+str(xdim)+"x"+str(ydim)+"x"+str(round(millis()))+".tif"); //autosave the image
     println("Saved: "+(millis() - (PAF + mset + start))+"ms");
-  }
-
-  if (output) {
-    image(img, 0, 0);
   }
 }
 
