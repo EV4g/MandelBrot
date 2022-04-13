@@ -2,7 +2,7 @@
 //black-grey-white colouring for debugging
 void reColour() {
   img.loadPixels();
-  for (int i = 0; i < ydim * xdim; i++) {
+  for (int i = 0; i < dim * dim; i++) {
     img.pixels[i] = color(mandelbrot[i] ? 255 : 0);
   }
   img.updatePixels();
@@ -15,7 +15,7 @@ void falseColor(int[] r, int[] g, int[] b) {
   float lgm = 255 / log(amax(g));
   float lbm = 255 / log(amax(b)); 
   img.loadPixels();
-  for (int i = 0; i < xdim * ydim; i++) {
+  for (int i = 0; i < dim * dim; i++) {
     img.pixels[i] = (((int)(log(r[i]) * lrm)) << 16) + (((int)(log(g[i]) * lgm)) << 8) + ((int)(log(b[i]) * lbm)) - cube;
   }
   img.updatePixels();
@@ -25,7 +25,7 @@ void falseColor(int[] r, int[] g, int[] b) {
 void falseColor(int offset) {
   float lm = 255 / log(imamax());
   img.loadPixels();
-  for (int i = 0; i < xdim * ydim; i++) {    
+  for (int i = 0; i < dim * dim; i++) {    
     img.pixels[i] += ((int)(lm * log(storageGrid[i]))) << offset;
   }
   img.updatePixels();
@@ -34,7 +34,7 @@ void falseColor(int offset) {
 //max value of array
 int amax(int[] g) {
   int m = 0;
-  for (int i = 0; i < xdim * ydim; i++) {
+  for (int i = 0; i < dim * dim; i++) {
     int a = g[i];
     m = a - ((a-m)&((a-m)>>31));
   }
@@ -44,7 +44,7 @@ int amax(int[] g) {
 //max value of storageGrid
 int imamax() {
   int m = 0;
-  for (int i = 0; i < xdim * ydim; i++) {
+  for (int i = 0; i < dim * dim; i++) {
     int a = storageGrid[i];
     m = a - ((a-m)&((a-m)>>31));
   }
@@ -52,7 +52,7 @@ int imamax() {
 }
 
 void init() {
-  for (int i = 0; i < xdim * ydim; i++) {
+  for (int i = 0; i < dim * dim; i++) {
     img.pixels[i]  = -1 << 24;
   }
 }
