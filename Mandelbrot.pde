@@ -1,19 +1,19 @@
 
 //Calculate mandelbrot set
 void mandelGrid(int Mit) {  
-  double minX = centerX - zoomHorizon/2, minY = centerY - zoomVert/2;
-  for (int x = -xdim/6; x < 5.0*xdim/6.0; x++) {
-    for (int y = 0; y < ydim/2 + 3; y++) {
-      double a = minX + (double)x / xdim * zoomHorizon; 
-      double b = minY + (double)y / ydim * zoomVert;  
-      mandelbrot[y + ydim * (x + xdim/6)] = inMandel(a, b, Mit);
+  double minX = centerX - zoom/2, minY = centerY - zoom/2;
+  for (int x = -dim/6; x < 5.0*dim/6.0; x++) {
+    for (int y = 0; y < dim/2 + 3; y++) {
+      double a = minX + (double)x / dim * zoom; 
+      double b = minY + (double)y / dim * zoom;  
+      mandelbrot[y + dim * (x + dim/6)] = inMandel(a, b, Mit);
     }
   }
   
   //symmetry part
-  for (int x = 0; x < xdim; x++) {
-    for (int y = 0; y < ydim/2; y++) {
-      mandelbrot[y + ydim/2 + x * ydim] = mandelbrot[ydim/2 - y + x * ydim];
+  for (int x = 0; x < dim; x++) {
+    for (int y = 0; y < dim/2; y++) {
+      mandelbrot[y + dim/2 + x * dim] = mandelbrot[dim/2 - y + x * dim];
     }
   }
 }
@@ -79,18 +79,18 @@ boolean skip(double a, double b) {
 
 //Edge detection, returns array with only the edge left
 int[] genBorder(int[] g) {
-  int[] temp = new int[ydim * xdim];
-  for  (int x = 0; x < xdim; x++) {
-    for  (int y = 0; y < xdim; y++) {
-      if (x!=0 && y!=0 && x!=xdim-1 && y!=ydim-1) {
+  int[] temp = new int[dim * dim];
+  for  (int x = 0; x < dim; x++) {
+    for  (int y = 0; y < dim; y++) {
+      if (x!=0 && y!=0 && x!=dim-1 && y!=dim-1) {
         int nbrs = 0;      
-        if (g[y + (x + 1) * ydim] == 0) nbrs += 1;
-        if (g[y + (x - 1) * ydim] == 0) nbrs += 1;
-        if (g[y + 1 + x * ydim] == 0) nbrs += 1;
-        if (g[y - 1 + x * ydim] == 0) nbrs += 1;              
-        temp[y + x * ydim] = ((nbrs == 4 || nbrs == 0) ? 1 : 0);
+        if (g[y + (x + 1) * dim] == 0) nbrs += 1;
+        if (g[y + (x - 1) * dim] == 0) nbrs += 1;
+        if (g[y + 1 + x * dim] == 0) nbrs += 1;
+        if (g[y - 1 + x * dim] == 0) nbrs += 1;              
+        temp[y + x * dim] = ((nbrs == 4 || nbrs == 0) ? 1 : 0);
       } else {
-        temp[y + x * ydim] = 1;
+        temp[y + x * dim] = 1;
       }
     }
   }
@@ -98,7 +98,7 @@ int[] genBorder(int[] g) {
 }
 
 void empty() {
-  for (int i = 0; i < xdim * ydim; i++) {
+  for (int i = 0; i < dim * dim; i++) {
     storageGrid[i] = 0;
   }
 }
@@ -106,17 +106,17 @@ void empty() {
 //Random Point Iteration, calculate trajectories for a set number of random values
 void rPI(int Mit, int amount, boolean sym) {
   empty();
-  double minX = centerX - zoomHorizon/2, minY = centerY - zoomVert/2;
+  double minX = centerX - zoom/2, minY = centerY - zoom/2;
   int index = 0;
   long itt = 0;
 
   while (index < amount) {
     double a = (double)random(-2, 2); 
     double b = (double)random(-2, (sym ? 0 : 2));
-    int x = (int)((a - minX) / zoomHorizon * xdim) + xdim/6;
-    int y = (int)((b - minY) / zoomVert * ydim);
-    if (x > 0 && x < xdim && y > 0 && y < ydim) {
-      if (!mandelbrot[y + x * ydim]) { //if not in mandelbrotset
+    int x = (int)((a - minX) / zoom * dim) + dim/6;
+    int y = (int)((b - minY) / zoom * dim);
+    if (x > 0 && x < dim && y > 0 && y < dim) {
+      if (!mandelbrot[y + x * dim]) { //if not in mandelbrotset
         index++;
         Complex c = new Complex(a, b);
         Complex z = new Complex(0, 0);
@@ -127,10 +127,10 @@ void rPI(int Mit, int amount, boolean sym) {
           z.Square();
           z.Add(c); 
 
-          int y_ = (int)((z.b - minY) / zoomVert * ydim);
-          int x_ = (int)((z.a - minX) / zoomHorizon * xdim) + xdim/6;
-          if (y_ >= 0 && y_ < ydim && x_ >= 0 && x_ < xdim) {
-            storageGrid[y_ + x_ * ydim] += 1;
+          int y_ = (int)((z.b - minY) / zoom * dim);
+          int x_ = (int)((z.a - minX) / zoom * dim) + dim/6;
+          if (y_ >= 0 && y_ < dim && x_ >= 0 && x_ < dim) {
+            storageGrid[y_ + x_ * dim] += 1;
           }
 
           itt++;         
@@ -142,10 +142,10 @@ void rPI(int Mit, int amount, boolean sym) {
     }
   }
   if (sym) {
-    for (int x = 0; x < xdim; x++) {
-      for (int y = 0; y < ydim/2; y++) {
-        storageGrid[ydim/2 - y + x * ydim] += storageGrid[y + ydim/2 + x * ydim];
-        storageGrid[y + ydim/2 + x * ydim] = storageGrid[ydim/2 - y + x * ydim];
+    for (int x = 0; x < dim; x++) {
+      for (int y = 0; y < dim/2; y++) {
+        storageGrid[dim/2 - y + x * dim] += storageGrid[y + dim/2 + x * dim];
+        storageGrid[y + dim/2 + x * dim] = storageGrid[dim/2 - y + x * dim];
       }
     }
   }
@@ -154,18 +154,18 @@ void rPI(int Mit, int amount, boolean sym) {
 
 //Random Point Iteration with array-return
 int[] rPIn(int Mit, int amount, boolean sym) {
-  int[] temp = new int[ydim * xdim];
-  double minX = centerX - zoomHorizon/2, minY = centerY - zoomVert/2;
+  int[] temp = new int[dim * dim];
+  double minX = centerX - zoom/2, minY = centerY - zoom/2;
   int index = 0;
   long itt = 0;
 
   while (index < amount) {
     double a = (double)random(-2, 2); 
     double b = (double)random(-2, (sym ? 0 : 2));
-    int x = (int)((a - minX) / zoomHorizon * xdim) + xdim/6; //initial coords
-    int y = (int)((b - minY) / zoomVert * ydim);
-    if (x > 0 && x < xdim && y > 0 && y < ydim) {
-      if (!mandelbrot[y + x * ydim]) { //if not in mandelbrotset
+    int x = (int)((a - minX) / zoom * dim) + dim/6; //initial coords
+    int y = (int)((b - minY) / zoom * dim);
+    if (x > 0 && x < dim && y > 0 && y < dim) {
+      if (!mandelbrot[y + x * dim]) { //if not in mandelbrotset
         index++;
         Complex c = new Complex(a, b);
         Complex z = new Complex(0, 0);
@@ -176,10 +176,10 @@ int[] rPIn(int Mit, int amount, boolean sym) {
           z.Square();
           z.Add(c); 
 
-          int y_ = (int)((z.b - minY) / zoomVert * ydim); //coords for storagegrids
-          int x_ = (int)((z.a - minX) / zoomHorizon * xdim) + xdim/6;
-          if (y_ >= 0 && y_ < ydim && x_ >= 0 && x_ < xdim) {
-            temp[y_ + x_ * ydim] += 1;
+          int y_ = (int)((z.b - minY) / zoom * dim); //coords for storagegrids
+          int x_ = (int)((z.a - minX) / zoom * dim) + dim/6;
+          if (y_ >= 0 && y_ < dim && x_ >= 0 && x_ < dim) {
+            temp[y_ + x_ * dim] += 1;
           }
 
           itt++;         
@@ -191,10 +191,10 @@ int[] rPIn(int Mit, int amount, boolean sym) {
     }
   }
   if (sym) {
-    for (int x = 0; x < xdim; x++) {
-      for (int y = 0; y < ydim/2; y++) {
-        temp[ydim/2 - y + x * ydim] += temp[y + ydim/2 + x * ydim];
-        temp[y + ydim/2 + x * ydim] = temp[ydim/2 - y + x * ydim];
+    for (int x = 0; x < dim; x++) {
+      for (int y = 0; y < dim/2; y++) {
+        temp[dim/2 - y + x * dim] += temp[y + dim/2 + x * dim];
+        temp[y + dim/2 + x * dim] = temp[dim/2 - y + x * dim];
       }
     }
   }
@@ -205,16 +205,16 @@ int[] rPIn(int Mit, int amount, boolean sym) {
 //Random Point Iteration without mandelbrot-lookup-array
 void rPI2(int Mit, int amount, boolean sym) {
   empty();
-  double minX = centerX - zoomHorizon/2, minY = centerY - zoomVert/2;
+  double minX = centerX - zoom/2, minY = centerY - zoom/2;
   int index = 0;
   long itt = 0;
 
   while (index < amount) {
     double a = (double)random(-2, 2); 
     double b = (double)random(-2, (sym ? 0 : 2));
-    int x = (int)((a - minX) / zoomHorizon * xdim) + xdim/6;
-    int y = (int)((b - minY) / zoomVert * ydim);
-    if (x > 0 && x < xdim && y > 0 && y < ydim) {
+    int x = (int)((a - minX) / zoom * dim) + dim/6;
+    int y = (int)((b - minY) / zoom * dim);
+    if (x > 0 && x < dim && y > 0 && y < dim) {
       if (!inMandel(a, b, 5000)) { //if not in mandelbrotset
         index++;
         Complex c = new Complex(a, b);
@@ -226,10 +226,10 @@ void rPI2(int Mit, int amount, boolean sym) {
           z.Square();
           z.Add(c); 
 
-          int y_ = (int)((z.b - minY) / zoomVert * ydim);
-          int x_ = (int)((z.a - minX) / zoomHorizon * xdim) + xdim/6;
-          if (y_ >= 0 && y_ < ydim && x_ >= 0 && x_ < xdim) {
-            storageGrid[y_ + x_ * ydim] += 1;
+          int y_ = (int)((z.b - minY) / zoom * dim);
+          int x_ = (int)((z.a - minX) / zoom * dim) + dim/6;
+          if (y_ >= 0 && y_ < dim && x_ >= 0 && x_ < dim) {
+            storageGrid[y_ + x_ * dim] += 1;
           }
 
           itt++;         
@@ -241,12 +241,18 @@ void rPI2(int Mit, int amount, boolean sym) {
     }
   }
   if (sym) {
-    for (int x = 0; x < xdim; x++) {
-      for (int y = 0; y < ydim/2; y++) {
-        storageGrid[ydim/2 - y + x * ydim] += storageGrid[y + ydim/2 + x * ydim];
-        storageGrid[y + ydim/2 + x * ydim] = storageGrid[ydim/2 - y + x * ydim];
+    for (int x = 0; x < dim; x++) {
+      for (int y = 0; y < dim/2; y++) {
+        storageGrid[dim/2 - y + x * dim] += storageGrid[y + dim/2 + x * dim];
+        storageGrid[y + dim/2 + x * dim] = storageGrid[dim/2 - y + x * dim];
       }
     }
   }
   println("Avg path: "+((float)itt / (float)index));
+}
+
+void downscaler(){
+  //plain averaging
+  //shifted gaussian weights averaging
+  
 }
