@@ -1,5 +1,4 @@
-double zoomHorizon;
-double zoomVert;
+double zoom;
 double centerX = 0, centerY = 0;
 boolean save;
 boolean lowram;
@@ -8,30 +7,25 @@ boolean mLookUp;
 PImage img;
 boolean[] mandelbrot;
 int[] storageGrid;
-int[] Rg;
-int[] Gg;
-int[] Bg;
 int start; 
 int mset;
-int xdim;
-int ydim;
+int dim;
 int Rn;
 int Gn;
 int Bn;
 String path;
 
 void settings() {
-  save = true;      //save output to .tif file
+  save = false;     //save output to .tif file
   lowram = true;    //use lower ram-usage mode
   output = true;    //output result to canvas
   mLookUp = true;   //mandelbrot-lookup-array or on-the-fly setcalculation //not yet implemented
-  xdim = 1000;
-  ydim = 1000;
+  dim = 1000;
   Rn = 5000;        //number of checked iterations per band
   Gn = 500;
   Bn = 50;
   if (output) {
-    size(xdim, ydim);
+    size(dim, dim);
   }
 }
 
@@ -39,14 +33,13 @@ void setup() {
   path = sketchPath();
   noLoop();
   start = millis();
-  zoomHorizon = 3.0;
-  zoomVert = 3.0 / ((double)xdim / (double)ydim);
-  mandelbrot = new boolean [ydim * xdim];
+  zoom = 3.0;
+  mandelbrot = new boolean [dim * dim];
   mandelGrid(5000); //calculate in/out for all points  
   mset = millis()-start; 
   println("Checked points: "+mset+"ms");
 
-  img = new PImage(xdim, ydim);
+  img = new PImage(dim, dim);
 
   if (!lowram) {
     startNMode();  //normal mode
@@ -65,19 +58,16 @@ void setup() {
 
 void keyPressed() {
   if (key == 's') {
-    img.save(path+"/"+str(xdim)+"x"+str(ydim)+"x"+str(round(millis()))+".tif");
+    img.save(path+"/"+str(dim)+"x"+str(dim)+"x"+str(round(millis()))+".tif");
     println("saved");
   }
 }
 
 //starts normal mode
 void startNMode() {
-  Rg = new int[ydim * xdim];
-  Gg = new int[ydim * xdim];
-  Bg = new int[ydim * xdim];
-  Rg = rPIn(Rn, p(1, 7), false);
-  Gg = rPIn(Gn, p(1, 7), false);
-  Bg = rPIn(Bn, p(1, 7), false);
+  int[] Rg = rPIn(Rn, p(1, 7), false);
+  int[] Gg = rPIn(Gn, p(1, 7), false);
+  int[] Bg = rPIn(Bn, p(1, 7), false);
 
   int Calc = millis() - start - mset; 
   println("Calculated trajectories: "+Calc+"ms");
@@ -87,14 +77,14 @@ void startNMode() {
   int Color = millis() - start - (Calc + mset);
   println("Calculated colour: "+Color+"ms");
   if (save) {
-    img.save(path+"/"+str(xdim)+"x"+str(ydim)+"x"+str(round(millis()))+".tif");
+    img.save(path+"/"+str(dim)+"x"+str(dim)+"x"+str(round(millis()))+".tif");
     println("Saved: "+(millis() - (Calc + mset + Color + start))+"ms");
   }
 }
 
 //starts lower-ram usage mode
 void startLRMode() {
-  storageGrid = new int[ydim * xdim];
+  storageGrid = new int[dim * dim];
   rPI(Rn, p(1, 7), false);   //fill grid for R  
   falseColor(16);            //update pixels[] with storageGrid and << by offset
   rPI(Gn, p(1, 7), false);
@@ -106,7 +96,7 @@ void startLRMode() {
   println("Filled pixels: "+PAF+"ms");
 
   if (save) {
-    img.save(path+"/"+str(xdim)+"x"+str(ydim)+"x"+str(round(millis()))+".tif"); //autosave the image
+    img.save(path+"/"+str(dim)+"x"+str(dim)+"x"+str(round(millis()))+".tif"); //autosave the image
     println("Saved: "+(millis() - (PAF + mset + start))+"ms");
   }
 }
