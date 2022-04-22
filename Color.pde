@@ -1,32 +1,35 @@
 
 //black-grey-white colouring for debugging
-void reColour() {
+void reColour(boolean[] arr) {
   img.loadPixels();
-  for (int i = 0; i < dim * dim; i++) {
-    img.pixels[i] = color(mandelbrot[i] ? 255 : 0);
+  for (int i = 0; i < rdim * rdim; i++) {
+    img.pixels[i] = color(arr[i] ? 255 : 0);
   }
   img.updatePixels();
 }
 
 //Fills pixel[] based on 3 arrays, each for either r,g or b
-void falseColor(int[] r, int[] g, int[] b) {
+void falseColor() {
   int cube = 1 << 24; //256^3
-  float lrm = 255 / log(amax(r)); 
-  float lgm = 255 / log(amax(g));
-  float lbm = 255 / log(amax(b)); 
+  float lrm = 255 / log(amax(Rg)); 
+  float lgm = 255 / log(amax(Gg));
+  float lbm = 255 / log(amax(Bg)); 
   img.loadPixels();
-  for (int i = 0; i < dim * dim; i++) {
-    img.pixels[i] = (((int)(log(r[i]) * lrm)) << 16) + (((int)(log(g[i]) * lgm)) << 8) + ((int)(log(b[i]) * lbm)) - cube;
+  for (int i = 0; i < odim * odim; i++) {
+    img.pixels[i] = (((int)(log(Rg[i]) * lrm)) << 16) + (((int)(log(Gg[i]) * lgm)) << 8) + ((int)(log(Bg[i]) * lbm)) - cube;
   }
   img.updatePixels();
 }
 
 //Fills pixel[] based on 1 colour array and previous entries to pixel[]
 void falseColor(int offset) {
+  downscaler();
   float lm = 255 / log(imamax());
   img.loadPixels();
-  for (int i = 0; i < dim * dim; i++) {    
-    img.pixels[i] += ((int)(lm * log(storageGrid[i]))) << offset;
+  for (int x = 0; x < odim; x++) {    
+    for (int y = 0; y < odim; y++) {    
+      img.pixels[y * odim + x] += ((int)(lm * log(storageGrid[y * odim + x]))) << offset;
+    }
   }
   img.updatePixels();
 }
@@ -34,7 +37,7 @@ void falseColor(int offset) {
 //max value of array
 int amax(int[] g) {
   int m = 0;
-  for (int i = 0; i < dim * dim; i++) {
+  for (int i = 0; i < rdim * rdim; i++) {
     int a = g[i];
     m = a - ((a-m)&((a-m)>>31));
   }
@@ -44,7 +47,7 @@ int amax(int[] g) {
 //max value of storageGrid
 int imamax() {
   int m = 0;
-  for (int i = 0; i < dim * dim; i++) {
+  for (int i = 0; i < rdim * rdim; i++) {
     int a = storageGrid[i];
     m = a - ((a-m)&((a-m)>>31));
   }
@@ -52,7 +55,7 @@ int imamax() {
 }
 
 void init() {
-  for (int i = 0; i < dim * dim; i++) {
+  for (int i = 0; i < odim * odim; i++) {
     img.pixels[i]  = -1 << 24;
   }
 }
