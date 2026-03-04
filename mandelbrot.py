@@ -152,7 +152,8 @@ while running:
 
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_r: view.update({'cx': -0.5, 'cy': 0.0, 'zoom': 1.0}); maxit = 500
-            elif event.key == pygame.K_EQUALS: maxit = int(maxit * 1.5)
+            elif event.key == pygame.K_EQUALS: maxit = min(int(maxit * 1.5), 32767)
+            elif event.key == pygame.K_MINUS: maxit = max(int(maxit / 1.5), 1)
             needs_render = True
 
     if needs_render: blit_frame(render_rgb())
