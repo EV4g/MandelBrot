@@ -63,6 +63,7 @@ mandelbrot_kernel = cp.ElementwiseKernel(
                 double dz_r = zr - prev_zr;
                 double dz_i = zi - prev_zi;
                 angle = (float) atan2(dz_i, dz_r);  // range: [-pi, pi]
+                //angle = (unsigned char)((atan2(dz_i, dz_r) + M_PI) / (2*M_PI) * 255);
                 mask = it; 
                 break; 
             }
@@ -90,7 +91,7 @@ cmap   = cm.get_cmap('inferno', 256)
 lut    = (cmap(np.linspace(0, 1, 256))[:, :3] * 255).astype(np.uint8)  # (256, 3)
 lut_cp = cp.asarray(lut) # on gpu
 
-cmap_angle = cm.get_cmap('hsv', 256)
+cmap_angle = cm.get_cmap('twilight_shifted', 256)
 lut_angle  = (cmap_angle(np.linspace(0, 1, 256))[:, :3] * 255).astype(np.uint8)
 lut_angle_cp = cp.asarray(lut_angle)
 
@@ -109,12 +110,12 @@ def render_rgb(show_angle=False):
         # angle [-pi, pi] --> 0-255 
         a = angle_grid.reshape(win_h, win_w)
         a = ((a + cp.float32(np.pi)) / cp.float32(2 * np.pi) * 255).astype(cp.uint8)
-        rgb_angle = lut_angle_cp[a].astype(cp.float32)  # hsv colour from angle
+        rgb_angle = lut_angle_cp[a]
         return cp.asnumpy(rgb_angle)
     
     else:
         # logscale array
-        m = mask.reshape(win_h, win_w).astype(cp.float32)
+        m = mask.reshape(win_h, win_w)
         m = cp.log1p(m)
         m = (m / m.max() * 255).astype(cp.uint8)
         rgb = lut_cp[m]
