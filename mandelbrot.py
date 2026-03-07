@@ -4,23 +4,24 @@ import pygame
 import matplotlib.cm as cm
 
 # parameters
-size  = 1000
+win_w, win_h = 1000, 1000
 maxit = 500
 view  = {'cx': -0.5, 'cy': 0.0, 'zoom': 1.0}
 drag  = {'active': False, 'x0': 0, 'y0': 0, 'cx0': 0.0, 'cy0': 0.0}
 
 mandelbrot_kernel = cp.ElementwiseKernel(
-    'int32 size, int32 maxit, float64 cx, float64 cy, float64 zoom',  # input: image size, max iterations, central (x,y), zoom
     'int16 mask',                                                     # output: array containing iteration count
+    'int32 w, int32 h, int32 maxit, float64 cx, float64 cy, float64 zoom',  # input: image size, max iterations, central (x,y), zoom
     '''
     // i is the pixel index, provided by CuPy
     // conversion from pixel index to space coordinate
-    int ix = i % size;
-    int iy = i / size;
+    int ix = i % w;
+    int iy = i / w;
+    int s = min(w, h);
 
     // main bulb and interior region skips; points here won't ever escape
-    double cr = cx + (4.0 * (ix - size * 0.5) / size) / zoom;
-    double ci = cy + (4.0 * (iy - size * 0.5) / size) / zoom;
+    double cr = cx + (4.0 * (ix - w * 0.5) / s) / zoom;
+    double ci = cy + (4.0 * (iy - h * 0.5) / s) / zoom;
     double a  = cr - 0.25;
     double r2 = a*a + ci*ci;
     bool skip = (
@@ -49,7 +50,7 @@ mandelbrot_kernel = cp.ElementwiseKernel(
             tmp = zr2 - zi2 + cr;
             zi  = fma(2.0*zr, zi, ci);
             zr  = tmp;
-            
+  
             // if out of bounds, break
             if (zr2 + zi2 > 4.0) { mask = it; break; }
 
@@ -79,14 +80,14 @@ lut_cp = cp.asarray(lut) # on gpu
 def render_rgb():
     mask = cp.zeros(size * size, dtype=cp.int16)
     mandelbrot_kernel(
-        cp.int32(size), cp.int32(maxit),
+        cp.int32(win_w), cp.int32(win_h), cp.int32(maxit),
         cp.float64(view['cx']), cp.float64(view['cy']), cp.float64(view['zoom']),
         mask
     )
     cp.cuda.Stream.null.synchronize()
 
     # logscale array
-    m = mask.reshape(size, size).astype(cp.float32)
+    m = mask.reshape(win_h, win_w).astype(cp.float32)
     m = cp.log1p(m)
     m = (m / m.max() * 255).astype(cp.uint8)
     rgb = lut_cp[m]
@@ -94,7 +95,7 @@ def render_rgb():
 
 # pygame setup
 pygame.init()
-screen = pygame.display.set_mode((size, size))
+screen = pygame.display.set_mode((win_w, win_h), pygame.RESIZABLE)
 pygame.display.set_caption("Mandelbrot")
 font = pygame.font.SysFont('monospace', 14)
 clock = pygame.time.Clock()
@@ -102,10 +103,9 @@ clock = pygame.time.Clock()
 def blit_frame(rgb):
     # pygame expects (width, height, 3) with axes transposed
     surf = pygame.surfarray.make_surface(rgb.transpose(1, 0, 2))
-    screen.blit(surf, (0, 0))
-
+    screen.blit(pygame.transform.scale(surf, screen.get_size()), (0, 0))
     txt = font.render(
-        f"cx={view['cx']:.6f}  cy={view['cy']:.6f}  zoom={view['zoom']:.4e}  maxit={maxit}",
+        f"cx={view['cx']:.6f}  cy={view['cy']:.6f}  zoom={view['zoom']:.4e}  maxit={maxit}  {win_w}x{win_h}",
         True, (255, 255, 255)
     )
     screen.blit(txt, (8, 8))
@@ -124,6 +124,10 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT: running = False
 
+        elif event.type == pygame.WINDOWRESIZED:
+            win_w, win_h = event.x, event.y
+            needs_render = True
+
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             drag['active'] = True
             drag['x0']  = event.pos[0]
@@ -136,17 +140,19 @@ while running:
             needs_render = True
 
         elif event.type == pygame.MOUSEMOTION and drag['active']:
-            dx = (event.pos[0] - drag['x0']) * 4.0 / (size * view['zoom'])
-            dy = (event.pos[1] - drag['y0']) * 4.0 / (size * view['zoom'])
+            s = min(win_w, win_h)
+            dx = (event.pos[0] - drag['x0']) * 4.0 / (s * view['zoom'])
+            dy = (event.pos[1] - drag['y0']) * 4.0 / (s * view['zoom'])
             view['cx'] = drag['cx0'] - dx
             view['cy'] = drag['cy0'] - dy
             needs_render = True
 
         elif event.type == pygame.MOUSEWHEEL:
             mx, my = pygame.mouse.get_pos()
+            s = min(win_w, win_h)
             factor = 2.0 if event.y > 0 else 0.5
-            view['cx'] += (mx - size/2) * 4.0 / (size * view['zoom']) * (1 - 1/factor)
-            view['cy'] += (my - size/2) * 4.0 / (size * view['zoom']) * (1 - 1/factor)
+            view['cx'] += (mx - win_w/2) * 4.0 / (s * view['zoom']) * (1 - 1/factor)
+            view['cy'] += (my - win_h/2) * 4.0 / (s * view['zoom']) * (1 - 1/factor)
             view['zoom'] *= factor
             needs_render = True
 
