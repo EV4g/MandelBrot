@@ -11,7 +11,7 @@ drag  = {'active': False, 'x0': 0, 'y0': 0, 'cx0': 0.0, 'cy0': 0.0}
 
 mandelbrot_kernel = cp.ElementwiseKernel(
     'int32 w, int32 h, int32 maxit, float64 cx, float64 cy, float64 zoom',  # input: image size, max iterations, central (x,y), zoom
-    'uint16 mask, float32 angle',                                            # output: array containing iteration count
+    'uint16 mask, float32 smooth, uint8 angle',                             # output: array containing iteration count
     '''
     // i is the pixel index, provided by CuPy
     // conversion from pixel index to space coordinate
@@ -33,6 +33,7 @@ mandelbrot_kernel = cp.ElementwiseKernel(
     );
     if (skip) {
         mask = maxit;
+        smooth = maxit;
         angle = 0.0f;
     } else {
         // MAIN LOOP
@@ -56,20 +57,25 @@ mandelbrot_kernel = cp.ElementwiseKernel(
             tmp = zr2 - zi2 + cr;
             zi  = fma(2.0*zr, zi, ci);
             zr  = tmp;
-  
+
             // if out of bounds, break
             if (zr2 + zi2 > 4.0) {
                 // angle of the step from prev_z to new z
                 double dz_r = zr - prev_zr;
                 double dz_i = zi - prev_zi;
-                angle = (float) atan2(dz_i, dz_r);  // range: [-pi, pi]
-                //angle = (unsigned char)((atan2(dz_i, dz_r) + M_PI) / (2*M_PI) * 255);
-                mask = it; 
+
+                //angle = (float) atan2(dz_i, dz_r);  // range: [-pi, pi]
+                angle = (unsigned char)((atan2(dz_i, dz_r) + M_PI) / (2*M_PI) * 255); //compute cmap index internally
+
+                double log_zn = log(zr*zr + zi*zi) * 0.5;
+                double nu     = log(log_zn / log(2.0)) / log(2.0);
+                smooth        = (float)(it - nu);   // fractional, continuous across boundaries
+                mask          = it;
                 break; 
             }
 
             // if periodic, break
-            if (zr == zr_old && zi == zi_old) { mask = maxit; angle = 0.0f; break; }
+            if (zr == zr_old && zi == zi_old) { mask = maxit; angle = 0.0f; smooth = maxit; break; }
 
             // Brent's Cycle detection algorithm
             countdown--;
@@ -80,7 +86,7 @@ mandelbrot_kernel = cp.ElementwiseKernel(
                 countdown = period;  // reset countdown to new period
             }
         }
-        if (mask == 0) { mask = maxit; angle = 0.0f; }
+        if (mask == 0) { mask = maxit; angle = 0.0f; smooth = maxit;}
     }
     ''',
     'mandelbrot'
@@ -95,27 +101,27 @@ cmap_angle = cm.get_cmap('twilight_shifted', 256)
 lut_angle  = (cmap_angle(np.linspace(0, 1, 256))[:, :3] * 255).astype(np.uint8)
 lut_angle_cp = cp.asarray(lut_angle)
 
-def render_rgb(show_angle=False):
+def render_rgb(show_angle=False, smooth=False):
     mask = cp.zeros(win_w * win_h, dtype=cp.uint16)
-    angle_grid = cp.zeros(win_w * win_h, dtype=cp.float32)
+    smooth_mask = cp.zeros(win_w * win_h, dtype=cp.float32)
+    angle_grid = cp.zeros(win_w * win_h, dtype=cp.uint8)
     
     mandelbrot_kernel(
         cp.int32(win_w), cp.int32(win_h), cp.int32(maxit),
         cp.float64(view['cx']), cp.float64(view['cy']), cp.float64(view['zoom']),
-        mask, angle_grid
+        mask, smooth_mask, angle_grid
     )
     cp.cuda.Stream.null.synchronize()
     
     if show_angle: 
-        # angle [-pi, pi] --> 0-255 
         a = angle_grid.reshape(win_h, win_w)
-        a = ((a + cp.float32(np.pi)) / cp.float32(2 * np.pi) * 255).astype(cp.uint8)
-        rgb_angle = lut_angle_cp[a]
+        rgb_angle = lut_angle_cp[a] # angle [-pi, pi] --> 0-255 
         return cp.asnumpy(rgb_angle)
     
     else:
-        # logscale array
-        m = mask.reshape(win_h, win_w)
+        if smooth: m = smooth_mask.reshape(win_h, win_w)
+        else:      m = mask.reshape(win_h, win_w)
+            
         m = cp.log1p(m)
         m = (m / m.max() * 255).astype(cp.uint8)
         rgb = lut_cp[m]
@@ -142,7 +148,8 @@ def blit_frame(rgb):
 # render
 running = True
 show_angle = False
-blit_frame(render_rgb(show_angle))
+smooth = False
+blit_frame(render_rgb(show_angle, smooth))
 
 while running:
     clock.tick(165)  # cap fps
@@ -190,8 +197,9 @@ while running:
             elif event.key == pygame.K_EQUALS: maxit = min(int(maxit * 1.5), 65535)
             elif event.key == pygame.K_MINUS: maxit = max(int(maxit / 1.5), 1)
             elif event.key == pygame.K_a: show_angle = not(show_angle)
+            elif event.key == pygame.K_s: smooth = not(smooth)
             needs_render = True
 
-    if needs_render: blit_frame(render_rgb(show_angle))
+    if needs_render: blit_frame(render_rgb(show_angle, smooth))
 
 pygame.quit()
