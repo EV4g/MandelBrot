@@ -94,7 +94,7 @@ cmap_angle = cm.get_cmap('hsv', 256)
 lut_angle  = (cmap_angle(np.linspace(0, 1, 256))[:, :3] * 255).astype(np.uint8)
 lut_angle_cp = cp.asarray(lut_angle)
 
-def render_rgb():
+def render_rgb(show_angle=False):
     mask = cp.zeros(win_w * win_h, dtype=cp.uint16)
     angle_grid = cp.zeros(win_w * win_h, dtype=cp.float32)
     
@@ -104,30 +104,21 @@ def render_rgb():
         mask, angle_grid
     )
     cp.cuda.Stream.null.synchronize()
-
-    # logscale array
-    m = mask.reshape(win_h, win_w).astype(cp.float32)
-    m = cp.log1p(m)
-    m = (m / m.max() * 255).astype(cp.uint8)
     
-    # angle [-pi, pi] → 0-255 index into cyclic HSV colormap
-    a = angle_grid.reshape(win_h, win_w)
-    a = ((a + cp.float32(np.pi)) / cp.float32(2 * np.pi) * 255).astype(cp.uint8)
-
-    # combine: use iteration count as brightness, angle as hue
-    rgb_mask  = lut_cp[m].astype(cp.float32)        # inferno colour from iterations
-    rgb_angle = lut_angle_cp[a].astype(cp.float32)  # hsv colour from angle
-
-    # interior points (mask==maxit) keep iteration colour, escaped points blend both
-    escaped = (mask.reshape(win_h, win_w) < maxit)[:, :, None]
-    rgb = cp.where(escaped, (rgb_mask * 0.5 + rgb_angle * 0.5), rgb_mask)
-    rgb = rgb.astype(cp.uint8)
-
-    return cp.asnumpy(rgb)
-    """
-    rgb = lut_cp[m]
-    return cp.asnumpy(rgb)
-    """
+    if show_angle: 
+        # angle [-pi, pi] --> 0-255 
+        a = angle_grid.reshape(win_h, win_w)
+        a = ((a + cp.float32(np.pi)) / cp.float32(2 * np.pi) * 255).astype(cp.uint8)
+        rgb_angle = lut_angle_cp[a].astype(cp.float32)  # hsv colour from angle
+        return cp.asnumpy(rgb_angle)
+    
+    else:
+        # logscale array
+        m = mask.reshape(win_h, win_w).astype(cp.float32)
+        m = cp.log1p(m)
+        m = (m / m.max() * 255).astype(cp.uint8)
+        rgb = lut_cp[m]
+        return cp.asnumpy(rgb)
 
 # pygame setup
 pygame.init()
@@ -148,9 +139,10 @@ def blit_frame(rgb):
     pygame.display.flip()
 
 # render
-blit_frame(render_rgb())
-
 running = True
+show_angle = False
+blit_frame(render_rgb(show_angle))
+
 while running:
     clock.tick(165)  # cap fps
 
@@ -196,8 +188,9 @@ while running:
             if event.key == pygame.K_r: view.update({'cx': -0.5, 'cy': 0.0, 'zoom': 1.0}); maxit = 500
             elif event.key == pygame.K_EQUALS: maxit = min(int(maxit * 1.5), 65535)
             elif event.key == pygame.K_MINUS: maxit = max(int(maxit / 1.5), 1)
+            elif event.key == pygame.K_a: show_angle = not(show_angle)
             needs_render = True
 
-    if needs_render: blit_frame(render_rgb())
+    if needs_render: blit_frame(render_rgb(show_angle))
 
 pygame.quit()
