@@ -33,17 +33,23 @@ mandelbrot_kernel = cp.ElementwiseKernel(
     );
     if (skip) {
         mask = maxit;
+        angle = 0.0f;
     } else {
         // MAIN LOOP
-        double zr = 0, zi = 0, tmp;     // real, imag, tmp
-        double zr2, zi2;                // old_real, old_imag for periodicity checks
-        double zr_old = 0, zi_old = 0;  // real^2, imag^2
-        int it = 0;                     // current iteration
-        int period = 1;                 // current cycle length being tested
-        int countdown = 1;              // iterations until next reference update
+        double zr = 0, zi = 0, tmp;      // real, imag, tmp
+        double zr2, zi2;                 // real^2, imag^2
+        double prev_zr = 0, prev_zi = 0; // z before the escape step
+        double zr_old = 0, zi_old = 0;   // old_real, old_imag for periodicity checks
+        int it = 0;                      // current iteration
+        int period = 1;                  // current cycle length being tested
+        int countdown = 1;               // iterations until next reference update
         
         while (it < maxit) {
             it++;
+
+            // snapshot z before update
+            prev_zr = zr; 
+            prev_zi = zi;
 
             // compute z --> z^2 + c            
             zr2 = zr*zr; zi2 = zi*zi;
@@ -52,10 +58,17 @@ mandelbrot_kernel = cp.ElementwiseKernel(
             zr  = tmp;
   
             // if out of bounds, break
-            if (zr2 + zi2 > 4.0) { mask = it; break; }
+            if (zr2 + zi2 > 4.0) {
+                // angle of the step from prev_z to new z
+                double dz_r = zr - prev_zr;
+                double dz_i = zi - prev_zi;
+                angle = (float) atan2(dz_i, dz_r);  // range: [-pi, pi]
+                mask = it; 
+                break; 
+            }
 
             // if periodic, break
-            if (zr == zr_old && zi == zi_old) { mask = maxit; break; }
+            if (zr == zr_old && zi == zi_old) { mask = maxit; angle = 0.0f; break; }
 
             // Brent's Cycle detection algorithm
             countdown--;
@@ -66,7 +79,7 @@ mandelbrot_kernel = cp.ElementwiseKernel(
                 countdown = period;  // reset countdown to new period
             }
         }
-        if (mask == 0) mask = maxit;
+        if (mask == 0) { mask = maxit; angle = 0.0f; }
     }
     ''',
     'mandelbrot'
@@ -77,12 +90,18 @@ cmap   = cm.get_cmap('inferno', 256)
 lut    = (cmap(np.linspace(0, 1, 256))[:, :3] * 255).astype(np.uint8)  # (256, 3)
 lut_cp = cp.asarray(lut) # on gpu
 
+cmap_angle = cm.get_cmap('hsv', 256)
+lut_angle  = (cmap_angle(np.linspace(0, 1, 256))[:, :3] * 255).astype(np.uint8)
+lut_angle_cp = cp.asarray(lut_angle)
+
 def render_rgb():
     mask = cp.zeros(win_w * win_h, dtype=cp.uint16)
+    angle_grid = cp.zeros(win_w * win_h, dtype=cp.float32)
+    
     mandelbrot_kernel(
         cp.int32(win_w), cp.int32(win_h), cp.int32(maxit),
         cp.float64(view['cx']), cp.float64(view['cy']), cp.float64(view['zoom']),
-        mask
+        mask, angle_grid
     )
     cp.cuda.Stream.null.synchronize()
 
@@ -90,8 +109,25 @@ def render_rgb():
     m = mask.reshape(win_h, win_w).astype(cp.float32)
     m = cp.log1p(m)
     m = (m / m.max() * 255).astype(cp.uint8)
+    
+    # angle [-pi, pi] → 0-255 index into cyclic HSV colormap
+    a = angle_grid.reshape(win_h, win_w)
+    a = ((a + cp.float32(np.pi)) / cp.float32(2 * np.pi) * 255).astype(cp.uint8)
+
+    # combine: use iteration count as brightness, angle as hue
+    rgb_mask  = lut_cp[m].astype(cp.float32)        # inferno colour from iterations
+    rgb_angle = lut_angle_cp[a].astype(cp.float32)  # hsv colour from angle
+
+    # interior points (mask==maxit) keep iteration colour, escaped points blend both
+    escaped = (mask.reshape(win_h, win_w) < maxit)[:, :, None]
+    rgb = cp.where(escaped, (rgb_mask * 0.5 + rgb_angle * 0.5), rgb_mask)
+    rgb = rgb.astype(cp.uint8)
+
+    return cp.asnumpy(rgb)
+    """
     rgb = lut_cp[m]
     return cp.asnumpy(rgb)
+    """
 
 # pygame setup
 pygame.init()
