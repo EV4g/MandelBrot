@@ -10,8 +10,8 @@ view  = {'cx': -0.5, 'cy': 0.0, 'zoom': 1.0}
 drag  = {'active': False, 'x0': 0, 'y0': 0, 'cx0': 0.0, 'cy0': 0.0}
 
 mandelbrot_kernel = cp.ElementwiseKernel(
-    'int16 mask',                                                     # output: array containing iteration count
     'int32 w, int32 h, int32 maxit, float64 cx, float64 cy, float64 zoom',  # input: image size, max iterations, central (x,y), zoom
+    'uint16 mask, float32 angle',                                            # output: array containing iteration count
     '''
     // i is the pixel index, provided by CuPy
     // conversion from pixel index to space coordinate
@@ -78,7 +78,7 @@ lut    = (cmap(np.linspace(0, 1, 256))[:, :3] * 255).astype(np.uint8)  # (256, 3
 lut_cp = cp.asarray(lut) # on gpu
 
 def render_rgb():
-    mask = cp.zeros(size * size, dtype=cp.int16)
+    mask = cp.zeros(win_w * win_h, dtype=cp.uint16)
     mandelbrot_kernel(
         cp.int32(win_w), cp.int32(win_h), cp.int32(maxit),
         cp.float64(view['cx']), cp.float64(view['cy']), cp.float64(view['zoom']),
@@ -158,7 +158,7 @@ while running:
 
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_r: view.update({'cx': -0.5, 'cy': 0.0, 'zoom': 1.0}); maxit = 500
-            elif event.key == pygame.K_EQUALS: maxit = min(int(maxit * 1.5), 32767)
+            elif event.key == pygame.K_EQUALS: maxit = min(int(maxit * 1.5), 65535)
             elif event.key == pygame.K_MINUS: maxit = max(int(maxit / 1.5), 1)
             needs_render = True
 
