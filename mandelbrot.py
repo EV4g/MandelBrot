@@ -1,7 +1,7 @@
 import cupy as cp
 import numpy as np
 import pygame
-import matplotlib.cm as cm
+import matplotlib
 
 # parameters
 win_w, win_h = 1000, 1000
@@ -93,11 +93,11 @@ mandelbrot_kernel = cp.ElementwiseKernel(
 )
 
 # set colormap lut
-cmap   = cm.get_cmap('inferno', 256)
+cmap   = matplotlib.colormaps['inferno'].resampled(256)
 lut    = (cmap(np.linspace(0, 1, 256))[:, :3] * 255).astype(np.uint8)  # (256, 3)
 lut_cp = cp.asarray(lut) # on gpu
 
-cmap_angle = cm.get_cmap('twilight_shifted', 256)
+cmap_angle = matplotlib.colormaps['twilight_shifted'].resampled(256)
 lut_angle  = (cmap_angle(np.linspace(0, 1, 256))[:, :3] * 255).astype(np.uint8)
 lut_angle_cp = cp.asarray(lut_angle)
 
